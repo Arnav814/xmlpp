@@ -1,4 +1,4 @@
-import xmlpp.file
+import xmlpp.file as file
 import shutil
 from pathlib import Path
 
