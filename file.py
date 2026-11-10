@@ -32,9 +32,11 @@ def process_template(content: str, path: Path) -> Template:
     params: set[str] = set()
 
     for child in xml.iter("param"):
+        if "name" not in child.attrib.keys():
+            raise Exception("Parameter has no name.")
         param = child.attrib["name"]
         if param is None:
-            raise Exception("Empty parameter.")
+            raise Exception("Empty parameter name.")
         params.add(param)
 
     return Template(path.stem.lstrip('@'), path, list(params), xml)
@@ -87,6 +89,22 @@ def process_tree(tree: ET.Element, state: State,
         if len(child) > 0:
             process_tree(child, state, expanding_template)
 
+        # TODO: check for links and ensure they're valid
+
+        if child.tag == "param":
+            # already checked that the param has a name
+            param_name = child.attrib["name"]
+            if expanding_template is None:
+                raise Exception(f'Parameter "{param_name}" referenced outside of a template.')
+            
+            for index, p in enumerate(expanding_template.template.params):
+                if param_name == p:
+                    replacement = expanding_template.args[index]
+                    replace_element_with_children(tree, child, replacement)
+                    break
+            else:
+                raise Exception(f'Parameter "{param_name} referenced without being defined in expansion of template "{expanding_template.template.name}".');
+
         # expand templates
         if child.tag == "template":
             if "name" not in child.attrib.keys():
@@ -109,10 +127,10 @@ def process_tree(tree: ET.Element, state: State,
                     raise Exception(f'Argument with missing name in instantiation of template "{template.name}".')
                 param = arg.attrib["name"]
 
-                for i, p in enumerate(template.params):
+                for index, p in enumerate(template.params):
                     if p == param:
                         # could remove the attributes, but why bother
-                        args[i] = arg
+                        args[index] = arg
                         break
                 else:
                     raise Exception(f'Argument refers to undeclared parameter "{param}" in instantiation of template "{template.name}".')
