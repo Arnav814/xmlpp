@@ -1,6 +1,4 @@
 <templatedef>
-	<paramdef>creation date</paramdef>
-	<paramdef>author</paramdef>
-	<h1><param>creation date</param></h1>
-	<p>By <param>author</param></p>
+	<h1><param name="creation date"/></h1>
+	<p>By <param name="author"/>.</p>
 </templatedef>

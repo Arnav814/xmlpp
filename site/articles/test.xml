@@ -1,6 +1,8 @@
+<html>
 <p>Hi this is some text</p>
 <template name="header">
 	<argument name="creation date">2026-11-09</argument>
 	<argument name="author">Arnav</argument>
 </template>
 <p>Hi this is some more text</p>
+</html>

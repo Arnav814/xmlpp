@@ -14,12 +14,14 @@ def check_templates(state: file.State):
             templates[i.name] = i
 
 
+logging.basicConfig(level=logging.INFO)
+
 src = Path("site")
 dest = Path("build")
 
 state = dir.scan_dir(src)
 check_templates(state)
-logging.info("Finished loading templates ({len(state.templates)} found).")
+logging.info(f"Finished loading templates ({len(state.templates)} found).")
 
 dir.process_dir(src, dest, state)
 logging.info("Finished!")

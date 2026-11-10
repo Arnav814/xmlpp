@@ -1,20 +1,21 @@
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass
 from pathlib import Path
-
-
-@dataclass
-class Parameter:
-    name: str
-    default: str | None
+from copy import deepcopy
 
 
 @dataclass
 class Template:
     name: str
     path: Path
-    params: list[Parameter]
+    params: list[str]
     content: ET.Element
+
+
+@dataclass
+class TemplateInit:
+    template: Template
+    args: list[ET.Element]
 
 
 @dataclass
@@ -28,42 +29,104 @@ def process_template(content: str, path: Path) -> Template:
     if xml.tag != "templatedef":
         raise Exception("File does not contain a template.")
 
-    params: list[Parameter] = []
+    params: set[str] = set()
 
-    for child in xml:
-        if child.tag == "paramdef":
-            if child.text is None:
-                raise Exception("Empty parameter definition.")
-            keys = child.attrib.keys()
-            if len(keys) >= 2 or len(keys) != 0 and "default" not in keys:
-                raise Exception(f"Unexpected attribute(s) in parameter: {keys}.")
+    for child in xml.iter("param"):
+        param = child.attrib["name"]
+        if param is None:
+            raise Exception("Empty parameter.")
+        params.add(param)
 
-            default = child.attrib["default"] if len(keys) > 0 else None
-            params.append(Parameter(child.text, default))
-            xml.remove(child)
-        else:
+    return Template(path.stem.lstrip('@'), path, list(params), xml)
+
+
+# replaces an element with the children of *another* element
+# keeps track of text and concats where needed
+# needs the parent of the element to be replaced
+def replace_element_with_children(
+        parent: ET.Element, target: ET.Element, replacement: ET.Element):
+    replacement = deepcopy(replacement)
+
+    # needed if we need to concat text at the start
+    prev: ET.Element | None = None
+    index = 0
+    for elem in parent:
+        if elem is target:
             break
+        prev = elem
+        index += 1
 
-    # done reading parameters
-    seen: set[str] = set()
-    for i in params:
-        if i.name in seen:
-            raise Exception(f"Duplicate definition of parameter {i.name}.")
-        seen.add(i.name)
+    tail = target.tail if target.tail is not None else ""
+    parent.remove(target)
+    if replacement.text is not None:
+        if prev is not None:
+            if prev.tail is None:
+                prev.tail = replacement.text
+            else:
+                prev.tail += replacement.text
+        else:
+            if parent.text is None:
+                parent.text = replacement.text
+            else:
+                parent.text += replacement.text
 
-    # more sanity checks
-    for child in xml.iter():
-        if child.tag == "paramdef":
-            raise Exception(f"Definition of parameter {child.text} after end of parameter list.")
+    for i, elem in enumerate(replacement):
+        if i == len(replacement) - 1:
+            if elem.tail is None:
+                elem.tail = tail
+            else:
+                elem.tail += tail
+        parent.insert(index + i, elem)
 
-        if child.tag == "param":
-            param = child.text
-            if not any((i.name == param for i in params)):
-                raise Exception(f"Use of undeclared parameter {param}.")
 
-    return Template(path.name, path, params, xml)
+# recursively process the tree
+def process_tree(tree: ET.Element, state: State,
+                 expanding_template: TemplateInit | None = None) -> ET.Element:
+    # reverse to allow modification
+    for child in reversed(tree):
+        if len(child) > 0:
+            process_tree(child, state, expanding_template)
+
+        # expand templates
+        if child.tag == "template":
+            if "name" not in child.attrib.keys():
+                raise Exception("No template specified to instantiate.")
+            template_name = child.attrib["name"]
+            template: Template | None = None
+            for i in state.templates:
+                if i.name == template_name:
+                    template = i
+                    break
+            if template is None:
+                raise Exception(f'Couldn\'t find template "{template_name}".')
+
+            args: list[ET.Element] = \
+                [ET.Element("argument") for i in template.params]
+            for arg in child:
+                if arg.tag != "argument":
+                    raise Exception(f'Unexpected tag "{arg.tag}" in instantiation of template "{template.name}".')
+                if "name" not in arg.attrib.keys():
+                    raise Exception(f'Argument with missing name in instantiation of template "{template.name}".')
+                param = arg.attrib["name"]
+
+                for i, p in enumerate(template.params):
+                    if p == param:
+                        # could remove the attributes, but why bother
+                        args[i] = arg
+                        break
+                else:
+                    raise Exception(f'Argument refers to undeclared parameter "{param}" in instantiation of template "{template.name}".')
+
+            # mmm, recursion
+            expanded = process_tree(deepcopy(template.content), state,
+                                    TemplateInit(template, args))
+            replace_element_with_children(tree, child, expanded)
+
+    return tree
 
 
 # process one file
 def process_file(content: str, state: State) -> str:
-    return ""
+    xml = ET.fromstring(content)
+    processed = process_tree(xml, state, None)
+    return ET.tostring(processed, encoding="unicode")
