@@ -1,0 +1,5 @@
+<templatedef>
+	<template name="header"/>
+	<param name="content"/>
+	<template name="footer"/>
+</templatedef>

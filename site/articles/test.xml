@@ -1,8 +1,8 @@
 <html>
-<p>Hi this is some text</p>
-<template name="header">
-	<argument name="creation date">2026-11-09</argument>
-	<argument name="author">Arnav</argument>
+<template name="page">
+	<argument name="content">
+		<h1>My Webpage</h1>
+		<p>It's great, isn't it?</p>
+	</argument>
 </template>
-<p>Hi this is some more text</p>
 </html>

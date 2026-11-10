@@ -86,9 +86,6 @@ def process_tree(tree: ET.Element, state: State,
                  expanding_template: TemplateInit | None = None) -> ET.Element:
     # reverse to allow modification
     for child in reversed(tree):
-        if len(child) > 0:
-            process_tree(child, state, expanding_template)
-
         # TODO: check for links and ensure they're valid
 
         if child.tag == "param":
@@ -106,7 +103,7 @@ def process_tree(tree: ET.Element, state: State,
                 raise Exception(f'Parameter "{param_name} referenced without being defined in expansion of template "{expanding_template.template.name}".');
 
         # expand templates
-        if child.tag == "template":
+        elif child.tag == "template":
             if "name" not in child.attrib.keys():
                 raise Exception("No template specified to instantiate.")
             template_name = child.attrib["name"]
@@ -140,11 +137,19 @@ def process_tree(tree: ET.Element, state: State,
                                     TemplateInit(template, args))
             replace_element_with_children(tree, child, expanded)
 
+        # more recursion
+        if len(child) > 0:
+            process_tree(child, state, expanding_template)
+
     return tree
 
 
 # process one file
 def process_file(content: str, state: State) -> str:
     xml = ET.fromstring(content)
+
+    if xml.tag == "template":
+        raise Exception("Root tag cannot be a template.")
+
     processed = process_tree(xml, state, None)
     return ET.tostring(processed, encoding="unicode")

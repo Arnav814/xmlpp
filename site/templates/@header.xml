@@ -1,4 +1,5 @@
 <templatedef>
-	<h1><param name="creation date"/></h1>
-	<p>By <param name="author"/>.</p>
+	<a src="/meta/about.html">About</a>
+	<a src="/meta/rss.html">RSS</a>
+	<a src="/meta/blog.html">Blog</a>
 </templatedef>
