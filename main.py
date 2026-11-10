@@ -3,6 +3,7 @@ from pathlib import Path
 import dir
 import file
 import logging
+import argparse
 
 
 def check_templates(state: file.State):
@@ -14,10 +15,18 @@ def check_templates(state: file.State):
             templates[i.name] = i
 
 
-logging.basicConfig(level=logging.INFO)
+parser = argparse.ArgumentParser(
+        prog="xmlpp",
+        description="A simple XML preprocessor")
+parser.add_argument("--loglevel", default="info")
+parser.add_argument("--src", default="site")
+parser.add_argument("--dest", default="build")
+args = parser.parse_args()
 
-src = Path("site")
-dest = Path("build")
+logging.basicConfig(level=logging.getLevelNamesMapping()[args.loglevel.upper()])
+
+src = Path(args.src)
+dest = Path(args.dest)
 
 state = dir.scan_dir(src)
 check_templates(state)
