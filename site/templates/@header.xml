@@ -1,5 +1,9 @@
 <templatedef>
-	<a src="/meta/about.html">About</a>
-	<a src="/meta/rss.html">RSS</a>
-	<a src="/meta/blog.html">Blog</a>
+	<link src="/css/site.css"/>
+	<ul class="navbar">
+		<li><a href="/">Home</a></li>
+		<li><a href="/meta/about.html">About</a></li>
+		<li><a href="/meta/rss.html">RSS</a></li>
+		<li><a href="/meta/blog.html">Blog</a></li>
+	</ul>
 </templatedef>
