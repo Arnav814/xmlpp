@@ -1,4 +1,5 @@
 import file
+import shutil
 from pathlib import Path
 
 
@@ -6,7 +7,7 @@ from pathlib import Path
 def scan_dir(directory: Path) -> file.State:
     state = file.State([], {})
     for path in directory.iterdir():
-        if path.is_file():
+        if path.is_file() and (path.suffix == ".xml" or path.suffix == ".html"):
             state.dirtree[path.name] = None
             if path.name[0] == '@':  # this file is a template
                 try:
@@ -21,8 +22,6 @@ def scan_dir(directory: Path) -> file.State:
             state.templates += substate.templates
             state.dirtree[path.name] = substate.dirtree
 
-        else:
-            raise Exception()
     return state
 
 
@@ -32,7 +31,7 @@ def process_dir(in_dir: Path, out_dir: Path, state: file.State):
         raise Exception(f'Output directory "{out_dir}" is not empty.')
 
     for path in in_dir.iterdir():
-        if path.is_file():
+        if path.is_file() and (path.suffix == ".xml" or path.suffix == ".html"):
             if path.name[0] != '@':
                 try:
                     content = path.read_text()
@@ -46,5 +45,6 @@ def process_dir(in_dir: Path, out_dir: Path, state: file.State):
             process_dir(path, out_dir / path.name, state)
 
         else:
-            raise Exception()
+            shutil.copy(path, out_dir / path.name)
+
 
