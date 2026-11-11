@@ -92,7 +92,6 @@ def expand_params(tree: ET.Element, state: State,
             param_name = child.attrib["name"]
             if expanding_template is None:
                 raise Exception(f'Parameter "{param_name}" referenced outside of a template.')
-            print(f"expanding param {param_name} for {expanding_template.template.name}")
 
             for index, p in enumerate(expanding_template.template.params):
                 if param_name == p:
