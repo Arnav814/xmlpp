@@ -84,6 +84,9 @@ def replace_element_with_children(
 # recursively process the tree
 def process_tree(tree: ET.Element, state: State,
                  expanding_template: TemplateInit | None = None) -> ET.Element:
+    # expand parameters first so that template instantiations that contain
+    # paramters are handled correctly
+
     # reverse to allow modification
     for child in reversed(tree):
         # TODO: check for links and ensure they're valid
@@ -102,8 +105,9 @@ def process_tree(tree: ET.Element, state: State,
             else:
                 raise Exception(f'Parameter "{param_name} referenced without being defined in expansion of template "{expanding_template.template.name}".');
 
+    for child in reversed(tree):
         # expand templates
-        elif child.tag == "template":
+        if child.tag == "template":
             if "name" not in child.attrib.keys():
                 raise Exception("No template specified to instantiate.")
             template_name = child.attrib["name"]
