@@ -7,6 +7,10 @@ from pathlib import Path
 def scan_dir(directory: Path) -> file.State:
     state = file.State([], {})
     for path in directory.iterdir():
+        # skip hidden files
+        if path.name[0] == '.':
+            continue
+
         if path.is_file() and (path.suffix == ".xml" or path.suffix == ".html"):
             state.dirtree[path.name] = None
             if path.name[0] == '@':  # this file is a template
@@ -31,6 +35,10 @@ def process_dir(in_dir: Path, out_dir: Path, state: file.State):
         raise Exception(f'Output directory "{out_dir}" is not empty.')
 
     for path in in_dir.iterdir():
+        # skip hidden files
+        if path.name[0] == '.':
+            continue
+
         if path.is_file() and (path.suffix == ".xml" or path.suffix == ".html"):
             if path.name[0] != '@':
                 try:
