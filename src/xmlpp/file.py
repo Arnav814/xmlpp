@@ -81,12 +81,8 @@ def replace_element_with_children(
         parent.insert(index + i, elem)
 
 
-# recursively process the tree
-def process_tree(tree: ET.Element, state: State,
-                 expanding_template: TemplateInit | None = None) -> ET.Element:
-    # expand parameters first so that template instantiations that contain
-    # paramters are handled correctly
-
+def expand_params(tree: ET.Element, state: State,
+                  expanding_template: TemplateInit | None = None) -> ET.Element:
     # reverse to allow modification
     for child in reversed(tree):
         # TODO: check for links and ensure they're valid
@@ -96,7 +92,8 @@ def process_tree(tree: ET.Element, state: State,
             param_name = child.attrib["name"]
             if expanding_template is None:
                 raise Exception(f'Parameter "{param_name}" referenced outside of a template.')
-            
+            print(f"expanding param {param_name} for {expanding_template.template.name}")
+
             for index, p in enumerate(expanding_template.template.params):
                 if param_name == p:
                     replacement = expanding_template.args[index]
@@ -105,6 +102,13 @@ def process_tree(tree: ET.Element, state: State,
             else:
                 raise Exception(f'Parameter "{param_name} referenced without being defined in expansion of template "{expanding_template.template.name}".');
 
+        if len(child) > 0:
+            expand_params(child, state, expanding_template)
+
+    return tree
+
+
+def expand_templates(tree: ET.Element, state: State) -> ET.Element:
     for child in reversed(tree):
         # expand templates
         if child.tag == "template":
@@ -141,10 +145,19 @@ def process_tree(tree: ET.Element, state: State,
                                     TemplateInit(template, args))
             replace_element_with_children(tree, child, expanded)
 
-        # more recursion
         if len(child) > 0:
-            process_tree(child, state, expanding_template)
+            expand_templates(child, state)
 
+    return tree
+
+
+# recursively process the tree
+def process_tree(tree: ET.Element, state: State,
+                 expanding_template: TemplateInit | None = None) -> ET.Element:
+    # expand parameters first so that template instantiations that contain
+    # paramters are handled correctly
+    tree = expand_params(tree, state, expanding_template)
+    tree = expand_templates(tree, state)
     return tree
 
 
