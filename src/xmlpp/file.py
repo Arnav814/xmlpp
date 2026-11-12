@@ -72,6 +72,12 @@ def replace_element_with_children(
             else:
                 parent.text += replacement.text
 
+    if len(replacement) == 0:
+        if parent.text is None:
+            parent.text = tail
+        else:
+            parent.text += tail
+
     for i, elem in enumerate(replacement):
         if i == len(replacement) - 1:
             if elem.tail is None:
